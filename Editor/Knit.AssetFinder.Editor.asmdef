@@ -1,0 +1,18 @@
+{
+    "name": "Knit.AssetFinder.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:686d1c27f281e7f41a186c7dad64de4b"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

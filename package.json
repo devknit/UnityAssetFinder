@@ -1,0 +1,11 @@
+{
+  "name": "com.devknit.finder",
+  "displayName": "Knit AssetFinder",
+  "version": "1.0.4",
+  "unity": "2018.4",
+  "author": {
+    "name": "Knit",
+    "email": "devknit.yua@gmail.com",
+    "url": "https://github.com/devknit"
+  }
+}
