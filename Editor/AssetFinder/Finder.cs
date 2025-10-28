@@ -68,7 +68,7 @@ namespace Knit.EditorWindow.AssetFinder
 					if( targets.ContainsKey( targetPath) == false)
 					{
 						string[] assetPaths = AssetDatabase.GetDependencies( targetPath, recursive);
-						targets.Add( targetPath, new ElementSource( targetPath, assetPaths.Length, -1));
+						targets.Add( targetPath, new ElementSource( targetPath, string.Empty, assetPaths.Length, -1));
 						
 						for( i1 = 0; i1 < assetPaths.Length; ++i1)
 						{
@@ -87,7 +87,7 @@ namespace Knit.EditorWindow.AssetFinder
 							{
 								string assetGuid = AssetDatabase.AssetPathToGUID( assetPath);
 								
-								elementSource = new ElementSource( assetPath, 0, -1);
+								elementSource = new ElementSource( assetPath, string.Empty, 0, -1);
 								results.Add( assetPath, elementSource);
 								
 								if( CheckMissing( assetPath, results, progress) == false)
@@ -136,7 +136,7 @@ namespace Knit.EditorWindow.AssetFinder
 				&&	AssetDatabase.IsValidFolder( targetPath) == false)
 				{
 					targetAssets.Add( targetPath, targetGuid);
-					targets.Add( targetPath, new ElementSource( targetPath, 0, -1));
+					targets.Add( targetPath, new ElementSource( targetPath, string.Empty, 0, -1));
 					
 					if( CheckMissing( targetPath, targets, 0) == false)
 					{
@@ -177,7 +177,7 @@ namespace Knit.EditorWindow.AssetFinder
 								{
 									if( results.TryGetValue( fromPath, out ElementSource elementSource) == false)
 									{
-										elementSource = new ElementSource( fromPath, 0, -1);
+										elementSource = new ElementSource( fromPath, string.Empty, 0, -1);
 										results.Add( fromPath, elementSource);
 									}
 									if( elementSource != null)
@@ -388,8 +388,8 @@ namespace Knit.EditorWindow.AssetFinder
 											
 											string displayName = string.Format( $"{hierarchyPath}<{asset.GetType().Name}@{displayPath}>");
 											
-											elements.Add( foundKeyPath, new ElementComponentSource( 
-												displayName, asset.GetType(), hierarchyPath, assetLocalId, foundKeyPath, -1, -2));
+											elements.Add( foundKeyPath, new ElementComponentSource( displayName, 
+												asset.GetType(), hierarchyPath, assetLocalId, foundKeyPath, -1, -2, string.Empty));
 											break;
 										}
 										++tryCount;

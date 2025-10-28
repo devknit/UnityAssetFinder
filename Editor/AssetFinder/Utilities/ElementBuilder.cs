@@ -13,13 +13,25 @@ namespace Knit.EditorWindow
 		}
 		internal List<Element> ToList()
 		{
-			return m_RootElements.ToList();
+			return Sort( m_RootElements.ToList());
+		}
+		List<Element> Sort( List<Element> elements)
+		{
+			elements.Sort( (a, b) =>
+			{
+				return a.AssetPath.CompareTo( b.AssetPath);
+			});
+			foreach( var element in elements)
+			{
+				Sort( element.ChildElements);
+			}
+			return elements;
 		}
 		internal bool Append( ElementSource source)
 		{
-			if( source != null && string.IsNullOrEmpty( source.Path) == false)
+			if( source != null && string.IsNullOrEmpty( source.AssetPath) == false)
 			{
-				string[] elementNames = source.Path.Split( '/');
+				string[] elementNames = source.AssetPath.Split( '/');
 				string elementName;
 				string path = string.Empty;
 				Element element = null;
@@ -38,13 +50,21 @@ namespace Knit.EditorWindow
 					
 					if( m_Registered.TryGetValue( path, out element) == false)
 					{
-						if( i0 == elementNames.Length - 1)
+						try
 						{
-							element = Element.Create( source);
+							if( i0 == elementNames.Length - 1)
+							{
+								element = Element.Create( source);
+							}
+							else
+							{
+								element = Element.Create( path);
+							}
 						}
-						else
+						catch( System.Exception e)
 						{
-							element = Element.Create( path);
+							element = null;
+							UnityEngine.Debug.LogError( e);
 						}
 						if( element == null)
 						{
@@ -68,7 +88,7 @@ namespace Knit.EditorWindow
 			}
 			return false;
 		}
-		internal bool Append( string assetPath, int reference=-1)
+		internal bool Append( string assetPath, string bundleName, int reference=-1)
 		{
 			if( string.IsNullOrEmpty( assetPath) == false)
 			{
@@ -91,7 +111,7 @@ namespace Knit.EditorWindow
 					
 					if( m_Registered.TryGetValue( path, out element) == false)
 					{
-						element = Element.Create( path, reference);
+						element = Element.Create( path, bundleName, reference);
 						if( element == null)
 						{
 							return false;

@@ -92,7 +92,7 @@ namespace Knit.EditorWindow
 					{
 						if( path.Value == 0)
 						{
-							if( element.Path.IndexOf( path.Key, StringComparison.OrdinalIgnoreCase) == 0)
+							if( element.AssetPath.IndexOf( path.Key, StringComparison.OrdinalIgnoreCase) == 0)
 							{
 								check = true;
 								break;
@@ -100,7 +100,7 @@ namespace Knit.EditorWindow
 						}
 						else if( path.Value == 1)
 						{
-							if( element.Path.IndexOf( path.Key, StringComparison.OrdinalIgnoreCase) >= 0)
+							if( element.AssetPath.IndexOf( path.Key, StringComparison.OrdinalIgnoreCase) >= 0)
 							{
 								check = true;
 								break;

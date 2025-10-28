@@ -121,7 +121,7 @@ namespace Knit.EditorWindow.AssetFinder
 		{
 			if( m_Project == null)
 			{
-				m_Project = new Explorer( GetAllAssetElements(), TreeView.Column.Project);
+				m_Project = new Explorer( GetAllAssetElements(), kUseColumnProject, kDefaultColumnProject);
 				m_Project.OnEnable( m_ClickType);
 				m_Project.ColumnHeaderResizeToFit();
 			}
@@ -136,7 +136,7 @@ namespace Knit.EditorWindow.AssetFinder
 		{
 			if( m_Select == null)
 			{
-				m_Select = new Explorer( new List<Element>(), TreeView.Column.Select);
+				m_Select = new Explorer( new List<Element>(), kUseColumnSelect, kDefaultColumnSelect);
 				m_Select.OnEnable( m_ClickType);
 				m_Select.ColumnHeaderResizeToFit();
 			}
@@ -146,7 +146,7 @@ namespace Knit.EditorWindow.AssetFinder
 		{
 			if( m_Dependent == null)
 			{
-				m_Dependent = new Explorer( new List<Element>(), TreeView.Column.Dependent);
+				m_Dependent = new Explorer( new List<Element>(), kUseColumnDependent, kDefaultColumnDependent);
 				m_Dependent.OnEnable( m_ClickType);
 				m_Dependent.ColumnHeaderResizeToFit();
 			}
@@ -163,7 +163,7 @@ namespace Knit.EditorWindow.AssetFinder
 				for( int i0 = 0; i0 < paths.Length; ++i0)
 				{
 					EditorUtility.DisplayProgressBar( "Enumerating Assets", paths[ i0], i0 / (float)paths.Length);
-					builder.Append( paths[ i0]);
+					builder.Append( paths[ i0], string.Empty);
 				}
 			}
 			EditorUtility.DisplayProgressBar( "Enumerating Assets", "Done", 1);
@@ -189,7 +189,7 @@ namespace Knit.EditorWindow.AssetFinder
 			}
 			if( m_Dependent == null)
 			{
-				m_Dependent = new Explorer( new List<Element>(), TreeView.Column.Dependent);
+				m_Dependent = new Explorer( new List<Element>(), kUseColumnDependent, kDefaultColumnDependent);
 				m_Dependent.OnEnable( m_ClickType);
 				m_Dependent.ColumnHeaderResizeToFit();
 			}
@@ -204,7 +204,7 @@ namespace Knit.EditorWindow.AssetFinder
 			}
 			if( m_Select == null)
 			{
-				m_Select = new Explorer( new List<Element>(), TreeView.Column.Select);
+				m_Select = new Explorer( new List<Element>(), kUseColumnSelect, kDefaultColumnSelect);
 				m_Select.OnEnable( m_ClickType);
 				m_Select.ColumnHeaderResizeToFit();
 			}
@@ -229,6 +229,16 @@ namespace Knit.EditorWindow.AssetFinder
 			"Ping", "Ping - file only", 
 			"Active", "Active - file only"
 		};
+		const TreeView.Column kUseColumnProject = TreeView.Column.Name | TreeView.Column.Extension |
+			TreeView.Column.AssetPath | TreeView.Column.AssetGuid | TreeView.Column.Missing;
+		const TreeView.Column kUseColumnSelect = TreeView.Column.Name | TreeView.Column.Extension |
+			TreeView.Column.AssetPath | TreeView.Column.AssetGuid | TreeView.Column.Missing | TreeView.Column.Reference;
+		const TreeView.Column kUseColumnDependent = TreeView.Column.Name | TreeView.Column.Extension |
+			TreeView.Column.AssetPath | TreeView.Column.AssetGuid | TreeView.Column.Missing | TreeView.Column.Reference;
+		const TreeView.Column kDefaultColumnProject = TreeView.Column.Name;
+		const TreeView.Column kDefaultColumnSelect = TreeView.Column.Name | TreeView.Column.Missing | TreeView.Column.Reference;
+		const TreeView.Column kDefaultColumnDependent = TreeView.Column.Name | TreeView.Column.Missing | TreeView.Column.Reference;
+		
 		[SerializeField]
 		Explorer m_Project;
 		[SerializeField]

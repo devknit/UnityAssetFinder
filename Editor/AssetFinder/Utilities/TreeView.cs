@@ -10,7 +10,7 @@ using UnityEditorInternal;
 
 namespace Knit.EditorWindow
 {
-	internal enum ClickType
+	public enum ClickType
 	{
 		None,
 		Ping,
@@ -18,53 +18,53 @@ namespace Knit.EditorWindow
 		Active,
 		ActiveFileOnly
 	}
-	internal enum ViewMode
+	public enum ViewMode
 	{
 		Tree,
 		List
 	}
-	internal sealed class TreeView : UnityEditor.IMGUI.Controls.TreeView
+	public sealed class TreeView : UnityEditor.IMGUI.Controls.TreeView
 	{
 		internal enum Column
 		{
 			None = 0x00,
 			Name = 0x01,
 			Extension = 0x02,
-			Path = 0x04,
-			Guid = 0x08,
-			Missing = 0x10,
-			Reference = 0x20,
+			AssetPath = 0x04,
+			AssetGuid = 0x08,
+			BundleName = 0x10,
+			Missing = 0x20,
+			Reference = 0x40,
 			
-			Project = Name,
-			Select = Name | Missing | Reference,
-			Dependent = Name | Missing | Reference,
-			All = Name | Extension | Path | Guid | Missing | Reference
+			All = Name | Extension | AssetPath | AssetGuid | Missing | Reference
 		}
-		internal static MultiColumnHeaderState CreateHeaderState( Column columnMask=Column.None)
+		internal static MultiColumnHeaderState CreateHeaderState( Column useColumnMask=Column.All, Column defaultColumnMask=Column.None)
 		{
-			var columns = new []
+			var columns = new List<MultiColumnHeaderState.Column>
 			{
-				new MultiColumnHeaderState.Column
+				new()
 				{
-					headerContent			= new GUIContent( "Name"),
-					headerTextAlignment 	= TextAlignment.Center,
-					canSort 				= false,
-					width					= 200, 
-					minWidth				= 50,
-					autoResize				= true,
-					allowToggleVisibility	= false
+					headerContent = new GUIContent("Name"),
+					headerTextAlignment = TextAlignment.Center,
+					canSort = false,
+					width = 200,
+					minWidth = 50,
+					autoResize = true,
+					allowToggleVisibility = false,
+					userData = (int)Column.Name,
 				},
-				new MultiColumnHeaderState.Column
+				new()
 				{
-					headerContent			= new GUIContent( "Extension"),
-					headerTextAlignment 	= TextAlignment.Center,
-					canSort 				= false,
-					width					= 80, 
-					minWidth				= 50,
-					autoResize				= false,
-					allowToggleVisibility	= true
+					headerContent = new GUIContent("Extension"),
+					headerTextAlignment = TextAlignment.Center,
+					canSort = false,
+					width = 80,
+					minWidth = 50,
+					autoResize = false,
+					allowToggleVisibility = true,
+					userData = (int)Column.Extension,
 				},
-				new MultiColumnHeaderState.Column
+				new()
 				{
 					headerContent			= new GUIContent( "Path"),
 					headerTextAlignment 	= TextAlignment.Center,
@@ -72,9 +72,10 @@ namespace Knit.EditorWindow
 					width					= 250, 
 					minWidth				= 50,
 					autoResize				= true,
-					allowToggleVisibility	= true
+					allowToggleVisibility	= true,
+					userData 				= (int)Column.AssetPath,
 				},
-				new MultiColumnHeaderState.Column
+				new()
 				{
 					headerContent			= new GUIContent( "Guid"),
 					headerTextAlignment 	= TextAlignment.Center,
@@ -82,9 +83,27 @@ namespace Knit.EditorWindow
 					width					= 240, 
 					minWidth				= 50,
 					autoResize				= false,
-					allowToggleVisibility	= true
+					allowToggleVisibility	= true,
+					userData 				= (int)Column.AssetGuid,
 				},
-				new MultiColumnHeaderState.Column
+			};
+			if( ((int)useColumnMask & (int)Column.BundleName) != 0)
+			{
+				columns.Add( new MultiColumnHeaderState.Column
+				{
+					headerContent			= new GUIContent( "Bundle"),
+					headerTextAlignment 	= TextAlignment.Center,
+					canSort 				= false,
+					width					= 250, 
+					minWidth				= 50,
+					autoResize				= false,
+					allowToggleVisibility	= true,
+					userData 				= (int)Column.BundleName,
+				});
+			}
+			if( ((int)useColumnMask & (int)Column.Missing) != 0)
+			{
+				columns.Add( new MultiColumnHeaderState.Column
 				{
 					headerContent			= new GUIContent( "Missing"),
 					headerTextAlignment 	= TextAlignment.Center,
@@ -92,9 +111,13 @@ namespace Knit.EditorWindow
 					width					= 80, 
 					minWidth				= 50,
 					autoResize				= false,
-					allowToggleVisibility	= true
-				},
-				new MultiColumnHeaderState.Column
+					allowToggleVisibility	= true,
+					userData 				= (int)Column.Missing,
+				});
+			}
+			if( ((int)useColumnMask & (int)Column.Reference) != 0)
+			{
+				columns.Add( new MultiColumnHeaderState.Column
 				{
 					headerContent			= new GUIContent( "Reference"),
 					headerTextAlignment 	= TextAlignment.Center,
@@ -102,18 +125,19 @@ namespace Knit.EditorWindow
 					width					= 80, 
 					minWidth				= 50,
 					autoResize				= false,
-					allowToggleVisibility	= true
-				},
-			};
-			var headerState = new MultiColumnHeaderState( columns);
+					allowToggleVisibility	= true,
+					userData 				= (int)Column.Reference,
+				});
+			}
+			var headerState = new MultiColumnHeaderState( columns.ToArray());
 			
-			if( columnMask != Column.None)
+			if( defaultColumnMask != Column.None)
 			{
 				var visibleColumns = new List<int>();
 				
-				for( int i0 = 0, mask = 1; mask < (int)Column.All; ++i0, mask <<= 1)
+				for( int i0 = 0; i0 < columns.Count; ++i0)
 				{
-					if( ((int)columnMask & mask) != 0)
+					if( (columns[ i0].userData & (int)defaultColumnMask) != 0)
 					{
 						visibleColumns.Add( i0);
 					}
@@ -145,7 +169,8 @@ namespace Knit.EditorWindow
 							extendElement = extendElement.ParentElement;
 						}
 					}
-					if( m_ClickType <= ClickType.PingFileOnly)
+					if( m_ClickType == ClickType.Ping
+					||	m_ClickType == ClickType.PingFileOnly)
 					{
 						element.PingObject( m_ClickType == ClickType.Ping);
 					}
@@ -165,7 +190,11 @@ namespace Knit.EditorWindow
 		{
 			m_ClickType = type;
 		}
-		internal void Apply( List<Element> src, ViewMode viewMode)
+		internal void Apply( ViewMode viewMode)
+		{
+			Apply( m_Elements, viewMode);
+		}
+		internal void Apply( List<Element> elements, ViewMode viewMode)
 		{
 			switch( viewMode)
 			{
@@ -196,10 +225,14 @@ namespace Knit.EditorWindow
 			}
 			if( m_BuildRows != null)
 			{
-				m_Elements = src;
+				m_Elements = elements;
 				Reload();
-				SetExpanded( "Assets".GetHashCode(), true);
+				// SetExpanded( "Assets".GetHashCode(), true);
 			}
+		}
+		internal bool Contains( Vector2 mousePosition)
+		{
+			return treeViewRect.Contains( mousePosition);
 		}
 		internal void SetColumnHeaderEnable( Column column, bool bEnable)
 		{
@@ -277,6 +310,7 @@ namespace Knit.EditorWindow
 			if( state.selectedIDs.Count > 0)
 			{
 				List<int> ids = state.selectedIDs;
+				
 				return FindRowElements( (element) =>
 				{
 					if( ids.Contains( element.id) != false)
@@ -304,7 +338,7 @@ namespace Knit.EditorWindow
 						{
 							if( GUIExpansion.HasKeyControl( ev.keyCode) == false)
 							{
-								string path = SelectSelectedElements( x => x.Path)?.First();
+								string path = SelectSelectedElements( x => x.AssetPath)?.First();
 								if( string.IsNullOrEmpty( path) == false)
 								{
 									AssetDatabase.OpenAsset( AssetDatabase.LoadMainAssetAtPath( path));
@@ -345,7 +379,7 @@ namespace Knit.EditorWindow
 					return false;
 				}).Select( (x) =>
 				{
-					return AssetDatabase.LoadMainAssetAtPath( (x as Element).Path);
+					return AssetDatabase.LoadMainAssetAtPath( (x as Element).AssetPath);
 				}).ToArray();
 				
 				if( newSelections.Length > 0)
@@ -361,6 +395,10 @@ namespace Knit.EditorWindow
 				if( element.Directory != false)
 				{
 					SetExpanded( id, !IsExpanded( id));
+				}
+				else if( OnDoubleClickedItem != null)
+				{
+					OnDoubleClickedItem.Invoke( element);
 				}
 				else
 				{
@@ -396,10 +434,11 @@ namespace Knit.EditorWindow
 				{
 					var cellRect = args.GetCellRect( i0);
 					var columnIndex = args.GetColumn( i0);
+					var column = multiColumnHeader.GetColumn( columnIndex);
 					
 					CenterRectUsingSingleLineHeight( ref cellRect);
 					
-					switch( (Column)(1 << columnIndex))
+					switch( (Column)column.userData)
 					{
 						case Column.Name:
 						{
@@ -411,14 +450,19 @@ namespace Knit.EditorWindow
 							DefaultGUI.Label( cellRect, element.Extension, args.selected, args.focused);
 							break;
 						}
-						case Column.Path:
+						case Column.AssetPath:
 						{
-							DefaultGUI.Label( cellRect, element.Path, args.selected, args.focused);
+							DefaultGUI.Label( cellRect, element.AssetPath, args.selected, args.focused);
 							break;
 						}
-						case Column.Guid:
+						case Column.AssetGuid:
 						{
-							DefaultGUI.Label( cellRect, element.Guid, args.selected, args.focused);
+							DefaultGUI.Label( cellRect, element.AssetGuid, args.selected, args.focused);
+							break;
+						}
+						case Column.BundleName:
+						{
+							DefaultGUI.Label( cellRect, element.BundleName, args.selected, args.focused);
 							break;
 						}
 						case Column.Missing:
@@ -484,8 +528,6 @@ namespace Knit.EditorWindow
 		}
 		void BuildTreeRows( List<Element> elements, IList<TreeViewItem> rows)
 		{
-			Element.TreeViewSort( elements);
-			
 			foreach( var element in elements)
 			{
 				var item = new Element( element);
@@ -507,21 +549,36 @@ namespace Knit.EditorWindow
 		}
 		void BuildListRows( List<Element> elements, IList<TreeViewItem> rows)
 		{
-			Element.ListViewSort( elements);
-			
 			foreach( var element in elements)
 			{
-				if( element.Directory == false)
+				Element item = null;
+				
+				if( element.Directory != false)
 				{
-					var item = new Element( element)
+					if( element.depth == 0)
 					{
-						depth = 0
+						item = new Element( element);
+						rows.Add( item);
+					}
+				}
+				else
+				{
+					item = new Element( element)
+					{
+						depth = 1
 					};
 					rows.Add( item);
 				}
 				if( element.ChildElements.Count > 0)
 				{
-					BuildListRows( element.ChildElements, rows);
+					if( item != null && IsExpanded( element.id) == false)
+					{
+						item.children = CreateChildListForCollapsedParent();
+					}
+					else
+					{
+						BuildListRows( element.ChildElements, rows);
+					}
 				}
 			}
 		}
@@ -535,8 +592,6 @@ namespace Knit.EditorWindow
 		}
 		void BuildTreeFilterRows( List<Element> elements, IList<TreeViewItem> rows)
 		{
-			Element.TreeViewSort( elements);
-			
 			foreach( var element in elements)
 			{
 				if( element.ValidCount > 0)
@@ -552,24 +607,39 @@ namespace Knit.EditorWindow
 		}
 		void BuildListFilterRows( List<Element> elements, IList<TreeViewItem> rows)
 		{
-			Element.ListViewSort( elements);
-			
 			foreach( var element in elements)
 			{
-				if( element.Directory == false)
+				Element item = null;
+				
+				if( element.Directory != false)
+				{
+					if( element.depth == 0)
+					{
+						item = new Element( element);
+						rows.Add( item);
+					}
+				}
+				else
 				{
 					if( m_SearchFilter.Check( element) != false)
 					{
-						var item = new Element( element)
+						item = new Element( element)
 						{
-							depth = 0
+							depth = 1
 						};
 						rows.Add( item);
 					}
 				}
 				if( element.ChildElements.Count > 0)
 				{
-					BuildListFilterRows( element.ChildElements, rows);
+					if( item != null && IsExpanded( element.id) == false)
+					{
+						item.children = CreateChildListForCollapsedParent();
+					}
+					else
+					{
+						BuildListFilterRows( element.ChildElements, rows);
+					}
 				}
 			}
 		}
@@ -578,6 +648,11 @@ namespace Knit.EditorWindow
 			if( multiColumnHeader.sortedColumnIndex >= 0)
 			{
 			}
+		}
+		internal Action<Element> OnDoubleClickedItem
+		{
+			get;
+			set;
 		}
 		Action<TreeViewItem, List<Element>> m_PreBuildRows;
 		Action<List<Element>, IList<TreeViewItem>> m_BuildRows;

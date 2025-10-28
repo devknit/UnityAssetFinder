@@ -11,78 +11,99 @@ namespace Knit.EditorWindow
 {
 	internal sealed class Element : TreeViewItem
 	{
-		static string EnclosedString( string src, string begin, string end)
-		{
-			int beginIndex = src.LastIndexOf( begin);
-			int endIndex = src.IndexOf( end);
-			if( beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex)
-			{
-				return src.Substring( ++beginIndex, endIndex - beginIndex);
-			}
-			return string.Empty;
-		}
 		internal static Element Create( ElementSource source)
 		{
 			if( source is ElementComponentSource component)
 			{
                 var element = new Element
                 {
-                    id = component.Path.GetHashCode(),
+                    id = component.AssetPath.GetHashCode(),
                     name = component.Name,
                     Extension = string.Empty,
-                    Path = component.Path,
-                    Guid = component.LocalId.ToString(),
+                    AssetPath = component.AssetPath,
+                    AssetGuid = component.LocalId.ToString(),
+					FilePath = component.AssetPath,
+                    FindPath = component.FindPath,
+					BundleName = string.Empty,
                     Directory = false,
                     Reference = component.Reference,
                     Missing = component.Missing,
                     AssetType = AssetType.Component,
                     LocalId = component.LocalId,
-                    FindPath = component.FindPath
                 };
                 var content = EditorGUIUtility.ObjectContent( null, component.Type);
 				element.icon = content.image as Texture2D;
 				
 				return element;
 			}
-			return Create( source.Path, source.Reference, source.Missing);
+			return Create( source.AssetPath, source.BundleName, source.Reference, source.Missing);
 		}
-		internal static Element Create( string path, int reference=-1, int missing=-1)
+		internal static Element Create( string path, string bundleName=null, int reference=-1, int missing=-1)
 		{
 			if( string.IsNullOrEmpty( path) == false && path.IndexOf( ":") < 0)
 			{
+				string assetGuid;
 				bool directory;
-				string guid;
+				string assetPath;
 				
-				switch( path)
+				int bundlePrefixIndex = path.IndexOf( "<");
+				int bundleSuffixIndex = path.IndexOf( ">/");
+				
+				if( bundlePrefixIndex == 0 && bundleSuffixIndex > 0)
+				{
+					assetPath = path.Substring( bundleSuffixIndex + 2, path.Length - (bundleSuffixIndex + 2));
+				}
+				else
+				{
+					assetPath = path;
+				}
+				path = path.Replace( "<", "");
+				path = path.Replace( ">", "");
+				
+				switch( assetPath)
 				{
 					case "Library":
 					case "Packages":
 					case "ProjectSettings":
 					{
-						guid = path;
+						assetGuid = "00000000000000001000000000000000";
 						directory = true;
 						break;
 					}
 					default:
 					{
-						guid = AssetDatabase.AssetPathToGUID( path);
-						directory = AssetDatabase.IsValidFolder( path);
+						assetGuid = AssetDatabase.AssetPathToGUID( assetPath);
+						
+						if( string.IsNullOrEmpty( assetGuid) != false)
+						{
+							if( bundlePrefixIndex == 0 && bundleSuffixIndex < 0)
+							{
+								assetPath = string.Empty;
+							}
+							directory = bundlePrefixIndex == 0;
+						}
+						else
+						{
+							directory = AssetDatabase.IsValidFolder( assetPath);
+						}
 						break;
 					}
 				}
-				if( string.IsNullOrEmpty( guid) == false)
+				if( string.IsNullOrEmpty( assetGuid) == false || directory != false)
 				{
                     var element = new Element
                     {
                         id = path.GetHashCode(),
-                        Path = path,
-                        Guid = guid,
-                        icon = AssetDatabase.GetCachedIcon( path) as Texture2D,
+						AssetPath = assetPath,
+                        AssetGuid = assetGuid,
+                        icon = AssetDatabase.GetCachedIcon( AssetDatabase.GUIDToAssetPath( assetGuid)) as Texture2D,
                         Directory = directory,
 						Missing = missing
                     };
                     if( element.Directory != false)
 					{
+						element.icon = AssetDatabase.GetCachedIcon( 
+							AssetDatabase.GUIDToAssetPath( "00000000000000001000000000000000")) as Texture2D;
 						element.name = System.IO.Path.GetFileName( path);
 						element.Extension = string.Empty;
 						element.AssetType = AssetType.Directory;
@@ -90,8 +111,10 @@ namespace Knit.EditorWindow
 					}
 					else
 					{
+						element.icon = AssetDatabase.GetCachedIcon( AssetDatabase.GUIDToAssetPath( assetGuid)) as Texture2D;
 						element.name = System.IO.Path.GetFileNameWithoutExtension( path);
 						element.Extension = System.IO.Path.GetExtension( path);
+						element.BundleName = bundleName ?? string.Empty;
 						
 						if( AssetTypes.kExtensions.TryGetValue( element.Extension, out AssetType assetType) != false)
 						{
@@ -126,7 +149,7 @@ namespace Knit.EditorWindow
 			{
 				elements.Sort( (src1, src2) =>
 				{
-					return string.Compare( src1.Path, src2.Path);
+					return src2.AssetPath.CompareTo( src1.AssetPath);
 				});
 			}
 		}
@@ -141,11 +164,13 @@ namespace Knit.EditorWindow
 			depth = src.depth;
 			name = src.name;
 			Extension = src.Extension;
-			Path = src.Path;
-			Guid = src.Guid;
+			AssetPath = src.AssetPath;
+			AssetGuid = src.AssetGuid;
 			AssetType = src.AssetType;
 			icon = src.icon;
+			FilePath = src.AssetPath;
 			FindPath = src.FindPath;
+			BundleName = src.BundleName;
 			Directory = src.Directory;
 			Reference = src.Reference;
 			Missing = src.Missing;
@@ -161,11 +186,13 @@ namespace Knit.EditorWindow
 			depth = node.depth;
 			name = node.name;
 			Extension = node.Extension;
-			Path = node.Path;
-			Guid = node.Guid;
+			AssetPath = node.AssetPath;
+			AssetGuid = node.AssetGuid;
 			AssetType = node.AssetType;
 			icon = node.icon;
+			FilePath = node.FilePath;
 			FindPath = node.FindPath;
+			BundleName = node.BundleName;
 			Directory = node.Directory;
 			Reference = node.Reference;
 			Missing = node.Missing;
@@ -233,6 +260,10 @@ namespace Knit.EditorWindow
 			}
 			return bValid;
 		}
+		internal void SetDepth( int offset=0)
+		{
+			depth = Mathf.Max( 0, FilePath.Split( '/').Length - 1 - offset);
+		}
 		internal bool CanOpenAsset()
 		{
 			return true;
@@ -249,7 +280,7 @@ namespace Knit.EditorWindow
 			}
 			else
 			{
-				AssetDatabase.OpenAsset( AssetDatabase.LoadMainAssetAtPath( Path));
+				AssetDatabase.OpenAsset( AssetDatabase.LoadMainAssetAtPath( AssetPath));
 			}
 		}
 		internal bool CanPingObject()
@@ -270,7 +301,7 @@ namespace Knit.EditorWindow
 				}
 				else
 				{
-					EditorGUIUtility.PingObject( AssetDatabase.LoadMainAssetAtPath( Path));
+					EditorGUIUtility.PingObject( AssetDatabase.LoadMainAssetAtPath( AssetPath));
 				}
 			}
 		}
@@ -292,7 +323,7 @@ namespace Knit.EditorWindow
 				}
 				else
 				{
-					Selection.activeObject = AssetDatabase.LoadMainAssetAtPath( Path);
+					Selection.activeObject = AssetDatabase.LoadMainAssetAtPath( AssetPath);
 				}
 			}
 		}
@@ -408,6 +439,16 @@ namespace Knit.EditorWindow
 			}
 			return ret;
 		}
+		static string EnclosedString( string src, string begin, string end)
+		{
+			int beginIndex = src.LastIndexOf( begin);
+			int endIndex = src.IndexOf( end);
+			if( beginIndex >= 0 && endIndex >= 0 && beginIndex < endIndex)
+			{
+				return src.Substring( ++beginIndex, endIndex - beginIndex);
+			}
+			return string.Empty;
+		}
 	#if WITH_SERIALIZE_LOCALFILEIDENTIFIER
 		static PropertyInfo s_CachedInspectorModeInfo = null;
 	#endif
@@ -419,9 +460,11 @@ namespace Knit.EditorWindow
 		public override string displayName{ get{ return name; } set{} }
 		internal string name{ get; private set; }
 		internal string Extension{ get; private set; }
-		internal string Path{ get; private set; }
-		internal string Guid{ get; private set; }
+		internal string AssetPath{ get; private set; }
+		internal string AssetGuid{ get; private set; }
+		internal string FilePath{ get; private set; }
 		internal string FindPath{ get; private set; }
+		internal string BundleName{ get; private set; }
 		internal AssetType AssetType{ get; private set; }
 		internal bool Directory{ get; private set; }
 		internal int Reference{ get; private set; }
@@ -429,7 +472,6 @@ namespace Knit.EditorWindow
 		internal long LocalId{ get; private set; }
 		internal Element ParentElement{ get; set; }
 		internal List<Element> ChildElements{ get; set; }
-		
 		internal int ValidCount{ get; set; }
 	}
 	[System.Serializable]
@@ -468,7 +510,7 @@ namespace Knit.EditorWindow
 		Element Deserialize( int index, out int count)
 		{
 			SerializableElementNode node = root[ index];
-		
+			
 			var children = new List<TreeViewItem>();
 			var ChildElements = new List<Element>();
 			Element element;
@@ -498,11 +540,13 @@ namespace Knit.EditorWindow
 			depth = element.depth;
 			name = element.name;
 			Extension = element.Extension;
-			Path = element.Path;
-			Guid = element.Guid;
+			AssetPath = element.AssetPath;
+			AssetGuid = element.AssetGuid;
 			AssetType = element.AssetType;
 			icon = element.icon;
+			FilePath = element.FilePath;
 			FindPath = element.FindPath;
+			BundleName = element.BundleName;
 			Directory = element.Directory;
 			Reference = element.Reference;
 			Missing = element.Missing;
@@ -519,11 +563,15 @@ namespace Knit.EditorWindow
 		[SerializeField]
 		internal string Extension;
 		[SerializeField]
-		internal string Path;
+		internal string AssetPath;
 		[SerializeField]
-		internal string Guid;
+		internal string AssetGuid;
+		[SerializeField]
+		internal string FilePath;
 		[SerializeField]
 		internal string FindPath;
+		[SerializeField]
+		internal string BundleName;
 		[SerializeField]
 		internal AssetType AssetType;
 		[SerializeField]

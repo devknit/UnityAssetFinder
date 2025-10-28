@@ -13,10 +13,12 @@ namespace Knit.EditorWindow.AssetFinder
 	[System.Serializable]
 	internal sealed class Explorer : ISerializationCallbackReceiver
 	{
-		internal Explorer( List<Element> elements, TreeView.Column columnMask) 
+		internal Explorer( List<Element> elements, TreeView.Column useColumnMask, TreeView.Column defaultColumnMask) 
 		{
-			m_HeaderState = TreeView.CreateHeaderState( columnMask);
+			m_UseColumnMask = useColumnMask;
+			m_DefaultColumnMask = defaultColumnMask;
 			m_ViewState = new TreeViewState();
+			m_HeaderState = TreeView.CreateHeaderState( m_UseColumnMask, m_DefaultColumnMask);
 			m_SerializableElement = new SerializableElementRoot();
 			m_Elements = elements;
 		}
@@ -38,22 +40,22 @@ namespace Knit.EditorWindow.AssetFinder
 			#endif
 				m_TypeTexture = "d_FilterByType";
 			}
-			MultiColumnHeaderState headerState = TreeView.CreateHeaderState();
+			MultiColumnHeaderState headerState = TreeView.CreateHeaderState( m_UseColumnMask, m_DefaultColumnMask);
 			
 			if( MultiColumnHeaderState.CanOverwriteSerializedFields( m_HeaderState, headerState) != false)
 			{
 				MultiColumnHeaderState.OverwriteSerializedFields( m_HeaderState, headerState);
 			}
 			m_HeaderState = headerState;
-			m_SearchFilter = new SearchFilter( OnFilterChange);
+			m_SearchFilter ??= new SearchFilter( OnFilterChange);
 			
-			m_TreeView = new TreeView( m_ViewState, new MultiColumnHeader( m_HeaderState), m_SearchFilter);
+			m_TreeView ??= new TreeView( m_ViewState, new MultiColumnHeader( m_HeaderState), m_SearchFilter);
 			m_TreeView.SetClickType( clickType);
 			
-			m_SearchField = new SearchField();
+			m_SearchField ??= new SearchField();
 			m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
 			
-			m_ObjectTypes = new PopupList.InputData();
+			m_ObjectTypes ??= new PopupList.InputData();
 			m_ObjectTypes.onSelectCallback = OnPopupSelect;
 			
 			for( int i0 = 0; i0 < AssetTypes.kTypeNames.Length; ++i0)
@@ -187,13 +189,13 @@ namespace Knit.EditorWindow.AssetFinder
 								}
 								else
 								{
-									AssetDatabase.OpenAsset( AssetDatabase.LoadMainAssetAtPath( element.Path));
+									AssetDatabase.OpenAsset( AssetDatabase.LoadMainAssetAtPath( element.AssetPath));
 								}
 							});
 							contextMenu.AddItem( new GUIContent( "Show in Explorer"), false, () =>
 							{
 								Element element = m_TreeView.FirstSelectedElements( x => true);
-								EditorUtility.RevealInFinder( element.Path);
+								EditorUtility.RevealInFinder( element.AssetPath);
 							});
 						}
 						if( selectedCount == 1 && m_TreeView.ContainsSeelctedElements( true, x => x.Directory) != false)
@@ -205,7 +207,7 @@ namespace Knit.EditorWindow.AssetFinder
 						}
 						contextMenu.AddItem( new GUIContent( "Copy Path"), false, () =>
 						{
-							var elements = m_TreeView.SelectSelectedElements( x => x.Path);
+							var elements = m_TreeView.SelectSelectedElements( x => x.AssetPath);
 							var builder = new System.Text.StringBuilder();
 							foreach( var element in elements)
 							{
@@ -215,7 +217,7 @@ namespace Knit.EditorWindow.AssetFinder
 						});
 						contextMenu.AddItem( new GUIContent( "Copy Guid"), false, () =>
 						{
-							var elements = m_TreeView.SelectSelectedElements( x => x.Guid);
+							var elements = m_TreeView.SelectSelectedElements( x => x.AssetGuid);
 							var builder = new System.Text.StringBuilder();
 							foreach( var element in elements)
 							{
@@ -225,7 +227,7 @@ namespace Knit.EditorWindow.AssetFinder
 						});
 						contextMenu.AddItem( new GUIContent( "Export Package/Select Only"), false, () =>
 						{
-							var assetPaths = m_TreeView.SelectSelectedElements( x => x.IsFile(), x => x.Path).ToArray();
+							var assetPaths = m_TreeView.SelectSelectedElements( x => x.IsFile(), x => x.AssetPath).ToArray();
 							if( assetPaths.Length > 0)
 							{
 								string directory = System.IO.Path.GetFullPath( "Assets/../");
@@ -239,7 +241,7 @@ namespace Knit.EditorWindow.AssetFinder
 						});
 						contextMenu.AddItem( new GUIContent( "Export Package/Include Dependencies"), false, () =>
 						{
-							var assetPaths = m_TreeView.SelectSelectedElements( x => x.IsFile(), x => x.Path).ToArray();
+							var assetPaths = m_TreeView.SelectSelectedElements( x => x.IsFile(), x => x.AssetPath).ToArray();
 							if( assetPaths.Length > 0)
 							{
 								string directory = System.IO.Path.GetFullPath( "Assets/../");
@@ -268,22 +270,22 @@ namespace Knit.EditorWindow.AssetFinder
 						}
 						contextMenu.AddItem( new GUIContent( "Select To Dependencies/New Window"), false, () =>
 						{
-							var elements = m_TreeView.SelectSelectedElements( x => x.Guid);
+							var elements = m_TreeView.SelectSelectedElements( x => x.AssetGuid);
 							contents?.OpenFindAssets( elements, Finder.Mode.ToDependencies);
 						});
 						contextMenu.AddItem( new GUIContent( "Select To Dependencies/Current Window"), false, () =>
 						{
-							var elements = m_TreeView.SelectSelectedElements( x => x.Guid);
+							var elements = m_TreeView.SelectSelectedElements( x => x.AssetGuid);
 							contents?.FindAssets( elements, Finder.Mode.ToDependencies);
 						});
 						contextMenu.AddItem( new GUIContent( "Select From Dependencies/New Window"), false, () =>
 						{
-							var elements = m_TreeView.SelectSelectedElements( x => x.Guid);
+							var elements = m_TreeView.SelectSelectedElements( x => x.AssetGuid);
 							contents?.OpenFindAssets( elements, Finder.Mode.FromDependencies);
 						});
 						contextMenu.AddItem( new GUIContent( "Select From Dependencies/Current Window"), false, () =>
 						{
-							var elements = m_TreeView.SelectSelectedElements( x => x.Guid);
+							var elements = m_TreeView.SelectSelectedElements( x => x.AssetGuid);
 							contents?.FindAssets( elements, Finder.Mode.FromDependencies);
 						});
 					#if false
@@ -309,7 +311,7 @@ namespace Knit.EditorWindow.AssetFinder
 				Element element = m_TreeView.FirstSelectedElements( ( x => true));
 				var builder = new StringBuilder();
 				
-				builder.AppendFormat( "p:~/{0} ", element.Path);
+				builder.AppendFormat( "p:~/{0} ", element.AssetPath);
 				m_SearchFilter.ToBuildStringTypes( builder);
 				m_SearchFilter.ToBuildStringNames( builder);
 				
@@ -390,6 +392,10 @@ namespace Knit.EditorWindow.AssetFinder
         TreeViewState m_ViewState;
 		[SerializeField]
 		ViewMode m_ViewMode;
+		[SerializeField]
+		TreeView.Column m_UseColumnMask;
+		[SerializeField]
+		TreeView.Column m_DefaultColumnMask;
 		[SerializeField]
 		MultiColumnHeaderState m_HeaderState;
 		[SerializeField]

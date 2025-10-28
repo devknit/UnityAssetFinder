@@ -3,15 +3,20 @@ namespace Knit.EditorWindow
 {
 	internal class ElementSource
 	{
-		internal ElementSource( string path, int reference, int missing)
+		internal ElementSource( string assetPath, string bundleName, int reference, int missing)
 		{
-			m_Path = path;
+			m_AssetPath = assetPath;
+			m_BundleName = bundleName;
 			m_Reference = reference;
 			m_Missing = missing;
 		}
-		internal string Path
+		internal string AssetPath
 		{
-			get{ return m_Path; }
+			get{ return m_AssetPath; }
+		}
+		internal string BundleName
+		{
+			get{ return m_BundleName; }
 		}
 		internal int Reference
 		{
@@ -23,14 +28,15 @@ namespace Knit.EditorWindow
 			get{ return m_Missing; }
 			set{ m_Missing = value; }
 		}
-		readonly string m_Path;
+		readonly string m_AssetPath;
+		readonly string m_BundleName;
 		int m_Reference;
 		int m_Missing;
 	}
 	internal sealed class ElementComponentSource : ElementSource
 	{
 		internal ElementComponentSource( string name, System.Type type, 
-			string findPath, long localId, string path, int reference, int missing) : base( path, reference, missing)
+			string findPath, long localId, string path, int reference, int missing, string bundleName) : base( path, bundleName, reference, missing)
 		{
 			m_Name = name;
 			m_Type = type;
