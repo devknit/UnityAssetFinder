@@ -23,7 +23,11 @@ namespace Knit.EditorWindow
 		Tree,
 		List
 	}
+#if UNITY_6000_4_OR_NEWER
+	public sealed class TreeView : UnityEditor.IMGUI.Controls.TreeView<int>
+#else
 	public sealed class TreeView : UnityEditor.IMGUI.Controls.TreeView
+#endif
 	{
 		internal enum Column
 		{
@@ -146,10 +150,17 @@ namespace Knit.EditorWindow
 			}
 			return headerState;
 		}
+	#if UNITY_6000_4_OR_NEWER
+		internal TreeView( TreeViewState<int> treeViewState, 
+			MultiColumnHeader multiColumnHeader, 
+			SearchFilter exploereSearchFilter) :
+			base( treeViewState, multiColumnHeader) 
+	#else
 		internal TreeView( TreeViewState treeViewState, 
 			MultiColumnHeader multiColumnHeader, 
 			SearchFilter exploereSearchFilter) :
 			base( treeViewState, multiColumnHeader) 
+	#endif
 		{
 			m_SearchFilter = (exploereSearchFilter != null)? 
 				exploereSearchFilter : new SearchFilter();
@@ -179,9 +190,15 @@ namespace Knit.EditorWindow
 				var allIDs = visibleRows.Select( x => x.id).ToList();
 				bool allowMultiselection = CanMultiSelect( clickedItem);
 				
+			#if UNITY_6000_4_OR_NEWER
+				return InternalEditorUtility.HandleMultiSelectionWithCurrentModifiers<int>(
+					clickedItem.id, allIDs, state.selectedIDs, state.lastClickedID, 
+					keepMultiSelection, allowMultiselection, useShiftAsActionKey);
+			#else
 				return InternalEditorUtility.GetNewSelection(
 					clickedItem.id, allIDs, state.selectedIDs, state.lastClickedID, 
 					keepMultiSelection, useShiftAsActionKey, allowMultiselection);
+			#endif
 			};
 			multiColumnHeader.height = EditorGUIUtility.singleLineHeight + 4;
 			multiColumnHeader.sortingChanged += OnSortingChanged;
@@ -268,11 +285,19 @@ namespace Knit.EditorWindow
 		{
 			return state.selectedIDs.Count;
 		}
+	#if UNITY_6000_4_OR_NEWER
+		internal IEnumerable<TreeViewItem<int>> FindRowElements( List<int> ids)
+	#else
 		internal IEnumerable<TreeViewItem> FindRowElements( List<int> ids)
+	#endif
 		{
 			return GetRows().Where( x => ids.Contains( x.id));
 		}
+	#if UNITY_6000_4_OR_NEWER
+		internal IEnumerable<TreeViewItem<int>> FindRowElements( System.Func<Element, bool> onWhere)
+	#else
 		internal IEnumerable<TreeViewItem> FindRowElements( System.Func<Element, bool> onWhere)
+	#endif
 		{
 			return GetRows().Where( x => onWhere?.Invoke( x as Element) ?? false);
 		}
@@ -494,6 +519,15 @@ namespace Knit.EditorWindow
 				}
 			}
 		}
+	#if UNITY_6000_4_OR_NEWER
+		protected override TreeViewItem<int> BuildRoot()
+		{
+			return new TreeViewItem<int>{ id = 0, depth = -1, displayName = string.Empty };
+		}
+		protected override IList<TreeViewItem<int>> BuildRows( TreeViewItem<int> root)
+		{
+			var rows = GetRows() ?? new List<TreeViewItem<int>>();
+	#else
 		protected override TreeViewItem BuildRoot()
 		{
 			return new TreeViewItem{ id = 0, depth = -1, displayName = string.Empty };
@@ -501,6 +535,7 @@ namespace Knit.EditorWindow
 		protected override IList<TreeViewItem> BuildRows( TreeViewItem root)
 		{
 			var rows = GetRows() ?? new List<TreeViewItem>();
+	#endif
 			rows.Clear();
 			
 			if( m_Elements != null)
@@ -519,14 +554,22 @@ namespace Knit.EditorWindow
 			}
 			return rows;
 		}
+	#if UNITY_6000_4_OR_NEWER
+		void PreBuildRows( TreeViewItem<int> root, List<Element> elements)
+	#else
 		void PreBuildRows( TreeViewItem root, List<Element> elements)
+	#endif
 		{
 			foreach( var element in elements)
 			{
 				root.AddChild( element);
 			}
 		}
+	#if UNITY_6000_4_OR_NEWER
+		void BuildTreeRows( List<Element> elements, IList<TreeViewItem<int>> rows)
+	#else
 		void BuildTreeRows( List<Element> elements, IList<TreeViewItem> rows)
+	#endif
 		{
 			foreach( var element in elements)
 			{
@@ -547,7 +590,11 @@ namespace Knit.EditorWindow
 				}
 			}
 		}
+	#if UNITY_6000_4_OR_NEWER
+		void BuildListRows( List<Element> elements, IList<TreeViewItem<int>> rows)
+	#else
 		void BuildListRows( List<Element> elements, IList<TreeViewItem> rows)
+	#endif
 		{
 			foreach( var element in elements)
 			{
@@ -582,7 +629,11 @@ namespace Knit.EditorWindow
 				}
 			}
 		}
+	#if UNITY_6000_4_OR_NEWER
+		void PreBuildTreeFilterRows( TreeViewItem<int> root, List<Element> elements)
+	#else
 		void PreBuildTreeFilterRows( TreeViewItem root, List<Element> elements)
+	#endif
 		{
 			foreach( var element in elements)
 			{
@@ -590,7 +641,11 @@ namespace Knit.EditorWindow
 				root.AddChild( element);
 			}
 		}
+	#if UNITY_6000_4_OR_NEWER
+		void BuildTreeFilterRows( List<Element> elements, IList<TreeViewItem<int>> rows)
+	#else
 		void BuildTreeFilterRows( List<Element> elements, IList<TreeViewItem> rows)
+	#endif
 		{
 			foreach( var element in elements)
 			{
@@ -605,7 +660,11 @@ namespace Knit.EditorWindow
 				}
 			}
 		}
+	#if UNITY_6000_4_OR_NEWER
+		void BuildListFilterRows( List<Element> elements, IList<TreeViewItem<int>> rows)
+	#else
 		void BuildListFilterRows( List<Element> elements, IList<TreeViewItem> rows)
+	#endif
 		{
 			foreach( var element in elements)
 			{
@@ -654,10 +713,17 @@ namespace Knit.EditorWindow
 			get;
 			set;
 		}
+	#if UNITY_6000_4_OR_NEWER
+		Action<TreeViewItem<int>, List<Element>> m_PreBuildRows;
+		Action<List<Element>, IList<TreeViewItem<int>>> m_BuildRows;
+		Action<TreeViewItem<int>, List<Element>> m_PreBuildFilterRows;
+		Action<List<Element>, IList<TreeViewItem<int>>> m_BuildFilterRows;
+	#else
 		Action<TreeViewItem, List<Element>> m_PreBuildRows;
 		Action<List<Element>, IList<TreeViewItem>> m_BuildRows;
 		Action<TreeViewItem, List<Element>> m_PreBuildFilterRows;
 		Action<List<Element>, IList<TreeViewItem>> m_BuildFilterRows;
+	#endif
 		readonly SearchFilter m_SearchFilter;
 		List<Element> m_Elements;
 		ClickType m_ClickType;

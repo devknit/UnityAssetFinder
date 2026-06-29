@@ -9,7 +9,11 @@ using UnityEditor.IMGUI.Controls;
 
 namespace Knit.EditorWindow
 {
+#if UNITY_6000_4_OR_NEWER
+	internal sealed class Element : TreeViewItem<int>
+#else
 	internal sealed class Element : TreeViewItem
+#endif
 	{
 		internal static Element Create( ElementSource source)
 		{
@@ -156,7 +160,11 @@ namespace Knit.EditorWindow
 		internal Element()
 		{
 			ChildElements = new List<Element>();
+		#if UNITY_6000_4_OR_NEWER
+			children = new List<TreeViewItem<int>>();
+		#else
 			children = new List<TreeViewItem>();
+		#endif
 		}
 		internal Element( Element src)
 		{
@@ -180,7 +188,11 @@ namespace Knit.EditorWindow
 			parent = src.parent;
 			children = src.children;
 		}
+	#if UNITY_6000_4_OR_NEWER
+		internal Element( SerializableElementNode node, List<Element> srcChildElements, List<TreeViewItem<int>> srcChildren)
+	#else
 		internal Element( SerializableElementNode node, List<Element> srcChildElements, List<TreeViewItem> srcChildren)
+	#endif
 		{
 			id = node.id;
 			depth = node.depth;
@@ -355,7 +367,11 @@ namespace Knit.EditorWindow
 					}
 					else
 					{
+					#if UNITY_6000_4_OR_NEWER
+						Selection.entityIds = selectObjects.Select( x => x.GetEntityId()).ToArray();
+					#else
 						Selection.instanceIDs = selectObjects.Select( x => x.GetInstanceID()).ToArray();
+					#endif
 					}
 				}
 			}
@@ -511,7 +527,11 @@ namespace Knit.EditorWindow
 		{
 			SerializableElementNode node = root[ index];
 			
+		#if UNITY_6000_4_OR_NEWER
+			var children = new List<TreeViewItem<int>>();
+		#else
 			var children = new List<TreeViewItem>();
+		#endif
 			var ChildElements = new List<Element>();
 			Element element;
 			int childCount;

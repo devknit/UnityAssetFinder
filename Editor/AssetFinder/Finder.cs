@@ -333,10 +333,17 @@ namespace Knit.EditorWindow.AssetFinder
 							{
 								bool bMissing = false;
 								
+							#if UNITY_6000_4_OR_NEWER
+								if( property.objectReferenceEntityIdValue.IsValid() != false)
+								{
+									bMissing = true;
+								}
+							#else
 								if( property.objectReferenceInstanceIDValue != 0)
 								{
 									bMissing = true;
 								}
+							#endif
 								else
 								{
 									if( property.hasChildren != false)
@@ -353,7 +360,11 @@ namespace Knit.EditorWindow.AssetFinder
 								{
 									string hierarchyPath = string.Empty;
 									long assetLocalId = 0;
+								#if UNITY_6000_4_OR_NEWER
+									EntityId intstanceId = default;
+								#else
 									int intstanceId = 0;
+								#endif
 									int tryCount = 0;
 									
 									Transform transform = asset switch
@@ -366,7 +377,11 @@ namespace Knit.EditorWindow.AssetFinder
 									{
 										AssetDatabase.TryGetGUIDAndLocalFileIdentifier( 
 											transform, out string assetGuid, out assetLocalId);
+									#if UNITY_6000_4_OR_NEWER
+										intstanceId = transform.GetEntityId();
+									#else
 										intstanceId = transform.GetInstanceID();
+									#endif
 										
 										while( transform != null)
 										{

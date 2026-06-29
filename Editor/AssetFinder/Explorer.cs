@@ -17,7 +17,11 @@ namespace Knit.EditorWindow.AssetFinder
 		{
 			m_UseColumnMask = useColumnMask;
 			m_DefaultColumnMask = defaultColumnMask;
+		#if UNITY_6000_4_OR_NEWER
+			m_ViewState = new TreeViewState<int>();
+		#else
 			m_ViewState = new TreeViewState();
+		#endif
 			m_HeaderState = TreeView.CreateHeaderState( m_UseColumnMask, m_DefaultColumnMask);
 			m_SerializableElement = new SerializableElementRoot();
 			m_Elements = elements;
@@ -389,7 +393,11 @@ namespace Knit.EditorWindow.AssetFinder
 			m_Elements = rootElement.ChildElements;
 		}
 		[SerializeField]
+	#if UNITY_6000_4_OR_NEWER
+		TreeViewState<int> m_ViewState;
+	#else
         TreeViewState m_ViewState;
+	#endif
 		[SerializeField]
 		ViewMode m_ViewMode;
 		[SerializeField]
